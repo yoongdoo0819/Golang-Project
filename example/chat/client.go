@@ -1,6 +1,8 @@
 package chat
 
 import (
+	"time"
+
 	"github.com/gorilla/websocket"
 )
 
@@ -9,10 +11,13 @@ type client struct {
 	socket *websocket.Conn
 
 	// 메시지가 전송되는 채널
-	send chan []byte
+	send chan *message
 
 	// 클라이언트가 채팅하는 방
 	room *room
+
+	// 사용자 정보 보유
+	userData map[string]interface{}
 }
 
 //	chat.html 에서 socket.send(msgBox.val());를 통해 서버에 메시지를 전송하면,
@@ -20,11 +25,14 @@ type client struct {
 func (c *client) read() {
 	defer c.socket.Close()
 	for {
-		_, msg, err := c.socket.ReadMessage()
+		var msg *message
+		err := c.socket.ReadJSON(&msg)
 		if err != nil {
 			return
 		}
 		// 수신한 메시지를 room으로 전송
+		msg.When = time.Now()
+		msg.Name = c.userData["name"].(string)
 		c.room.forward <- msg
 	}
 }
@@ -35,9 +43,9 @@ func (c *client) read() {
 func (c *client) write() {
 	defer c.socket.Close()
 	for msg := range c.send {
-		err := c.socket.WriteMessage(websocket.TextMessage, msg)
+		err := c.socket.WriteJSON(msg)
 		if err != nil {
-			return
+			break
 		}
 	}
 }

@@ -6,12 +6,13 @@ import (
 	"net/http"
 
 	"github.com/gorilla/websocket"
+	"github.com/stretchr/objx"
 )
 
 type room struct {
 	//	수신 메시지를 보관하는 채널
 	//	수신한 메시지는 다른 클라이언트로 전달돼야 함
-	forward chan []byte
+	forward chan *message
 
 	join    chan *client
 	leave   chan *client
@@ -32,7 +33,7 @@ func (r *room) Run() {
 			close(client.send)
 			r.Tracer.Trace("Client left")
 		case msg := <-r.forward: //	room으로 전송된 메시지가 있다면, room 내의 모든 클라이언트에게 전송
-			r.Tracer.Trace("Message received: ", string(msg))
+			r.Tracer.Trace("Message received: ", msg.Message)
 			for client := range r.clients {
 				client.send <- msg // 클라이언트의 write() 메서드 내의 c.send 실행
 				r.Tracer.Trace(" -- sent to client")
@@ -55,10 +56,17 @@ func (r *room) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	authCookie, err := req.Cookie("auth")
+	if err != nil {
+		log.Fatal("Failed to get auth cookie:", err)
+		return
+	}
+
 	client := &client{
-		socket: socket,
-		send:   make(chan []byte, messageBufferSize),
-		room:   r,
+		socket:   socket,
+		send:     make(chan *message, messageBufferSize),
+		room:     r,
+		userData: objx.MustFromBase64(authCookie.Value),
 	}
 
 	r.join <- client
@@ -69,7 +77,7 @@ func (r *room) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 func NewRoom() *room {
 	return &room{
-		forward: make(chan []byte),
+		forward: make(chan *message),
 		join:    make(chan *client),
 		leave:   make(chan *client),
 		clients: make(map[*client]bool),
