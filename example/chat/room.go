@@ -25,9 +25,9 @@ func (r *room) Run() {
 		case client := <-r.leave:
 			delete(r.clients, client)
 			close(client.send)
-		case msg := <-r.forward:
+		case msg := <-r.forward: //	room으로 전송된 메시지가 있다면, room 내의 모든 클라이언트에게 전송
 			for client := range r.clients {
-				client.send <- msg
+				client.send <- msg // 클라이언트의 write() 메서드 내의 c.send 실행
 			}
 		}
 	}
