@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"example/trace"
 	"log"
 	"net/http"
 
@@ -8,13 +9,16 @@ import (
 )
 
 type room struct {
-	// 수신 메시지를 보관하는 채널
-	// 수신한 메시지는 다른 클라이언트로 전달돼야 함
+	//	수신 메시지를 보관하는 채널
+	//	수신한 메시지는 다른 클라이언트로 전달돼야 함
 	forward chan []byte
 
 	join    chan *client
 	leave   chan *client
 	clients map[*client]bool
+
+	//	방 안에서 활동의 추적 정보 수신
+	Tracer trace.Tracer
 }
 
 func (r *room) Run() {
@@ -22,12 +26,16 @@ func (r *room) Run() {
 		select {
 		case client := <-r.join:
 			r.clients[client] = true
+			r.Tracer.Trace("New client joined")
 		case client := <-r.leave:
 			delete(r.clients, client)
 			close(client.send)
+			r.Tracer.Trace("Client left")
 		case msg := <-r.forward: //	room으로 전송된 메시지가 있다면, room 내의 모든 클라이언트에게 전송
+			r.Tracer.Trace("Message received: ", string(msg))
 			for client := range r.clients {
 				client.send <- msg // 클라이언트의 write() 메서드 내의 c.send 실행
+				r.Tracer.Trace(" -- sent to client")
 			}
 		}
 	}
