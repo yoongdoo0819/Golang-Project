@@ -34,7 +34,9 @@ func main() {
 
 	r := chat.NewRoom()
 	r.Tracer = trace.New(os.Stdout)
-	http.Handle("/", &templateHandler{filename: "chat.html"})
+	http.Handle("/chat", chat.MustAuth(&templateHandler{filename: "chat.html"}))
+	http.Handle("/login", &templateHandler{filename: "login.html"})
+	http.HandleFunc("/auth/", chat.LoginHandler)
 	http.Handle("/room", r)
 
 	go r.Run()
