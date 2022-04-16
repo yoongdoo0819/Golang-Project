@@ -20,6 +20,9 @@ type room struct {
 
 	//	방 안에서 활동의 추적 정보 수신
 	Tracer trace.Tracer
+
+	//	아바타 정보를 얻는 방법
+	avatar Avatar
 }
 
 func (r *room) Run() {
@@ -75,11 +78,12 @@ func (r *room) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	client.read()
 }
 
-func NewRoom() *room {
+func NewRoom(avatar Avatar) *room {
 	return &room{
 		forward: make(chan *message),
 		join:    make(chan *client),
 		leave:   make(chan *client),
 		clients: make(map[*client]bool),
+		avatar:  avatar,
 	}
 }
