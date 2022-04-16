@@ -1,6 +1,7 @@
 package main
 
 import (
+	"example/avatars"
 	"example/chat"
 	"example/trace"
 	"flag"
@@ -69,6 +70,8 @@ func main() {
 		w.Header().Set("Location", "/chat")
 		w.WriteHeader(http.StatusTemporaryRedirect)
 	})
+	http.Handle("/upload", &templateHandler{filename: "upload.html"})
+	http.HandleFunc("/uploader", avatars.UploaderHandler)
 
 	go r.Run()
 
