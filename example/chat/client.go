@@ -33,7 +33,10 @@ func (c *client) read() {
 		// 수신한 메시지를 room으로 전송
 		msg.When = time.Now()
 		msg.Name = c.userData["name"].(string)
-		msg.AvatarURL, _ = c.room.avatar.GetAvatarURL(c)
+		//msg.AvatarURL, _ = c.room.avatar.GetAvatarURL(c)
+		if avatarUrl, ok := c.userData["avatar_url"]; ok {
+			msg.AvatarURL = avatarUrl.(string)
+		}
 		c.room.forward <- msg
 	}
 }
