@@ -33,7 +33,8 @@ func (c *client) read() {
 		// 수신한 메시지를 room으로 전송
 		msg.When = time.Now()
 		msg.Name = c.userData["name"].(string)
-		//msg.AvatarURL, _ = c.room.avatar.GetAvatarURL(c)
+		//	모든 메시지를 수신할 때마다,
+		//	msg.AvatarURL, _ = c.room.avatar.GetAvatarURL(c) 코드로 AvatarURL을 받아온다면 확장성에 문제가 있음
 		if avatarUrl, ok := c.userData["avatar_url"]; ok {
 			msg.AvatarURL = avatarUrl.(string)
 		}
